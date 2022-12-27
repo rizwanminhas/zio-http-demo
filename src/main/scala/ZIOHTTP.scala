@@ -1,6 +1,7 @@
 import zio.{ZIO, ZIOAppDefault}
 import zio.*
 import zhttp.http.*
+import zhttp.http.middleware.Cors.CorsConfig
 import zhttp.service.Server
 
 import java.lang
@@ -29,12 +30,20 @@ object ZIOHTTP extends ZIOAppDefault:
 
   val loggingHttp = combined @@ Verbose.log
 
+  val corsConfig = CorsConfig(
+    anyOrigin = false,
+    anyMethod = false,
+    allowedOrigins = s => s.equals("localhost"),
+    allowedMethods = Some(Set(Method.GET, Method.POST))
+  )
+
+  val corsEnabledHttp = combined @@ Middleware.cors(corsConfig) @@ Verbose.log
 
   val httpProgram = for {
     _ <- Console.printLine(s"Starting server at http://localhost:$port")
-    _ <- Server.start(port, loggingHttp)
+    _ <- Server.start(port, corsEnabledHttp)
   } yield ()
-
+  
   override def run: ZIO[Any, Any, Any] = httpProgram
 
 // request => contramap => http application => response => map => final response
