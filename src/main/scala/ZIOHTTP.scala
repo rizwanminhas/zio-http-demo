@@ -2,7 +2,10 @@ import zio.{ZIO, ZIOAppDefault}
 import zio.*
 import zhttp.http.*
 import zhttp.http.middleware.Cors.CorsConfig
-import zhttp.service.Server
+import zhttp.service.ChannelEvent.{ChannelRead, ChannelUnregistered, UserEventTriggered}
+import zhttp.service.ChannelEvent.UserEvent.{HandshakeComplete, HandshakeTimeout}
+import zhttp.service.{ChannelEvent, Server}
+import zhttp.socket.{WebSocketChannelEvent, WebSocketFrame}
 
 import java.lang
 import scala.util.control
@@ -44,9 +47,28 @@ object ZIOHTTP extends ZIOAppDefault:
 
   val corsEnabledHttp = combined @@ Middleware.cors(corsConfig) @@ Verbose.log
 
+  val sarcastic: String => String = txt => txt.toList.zipWithIndex.map {
+    case (c: Char, i: Int) => if (i % 2 == 0) c.toUpper else c.toLower
+  }.mkString
+
+  val wsLogic: Http[Any, Throwable, WebSocketChannelEvent, Unit] =
+    Http.collectZIO[WebSocketChannelEvent] {
+      case ChannelEvent(channel, ChannelRead(WebSocketFrame.Text(message))) =>
+        channel.writeAndFlush(WebSocketFrame.text(sarcastic(message)))
+      case ChannelEvent(channel, UserEventTriggered(event)) =>
+        event match
+          case HandshakeComplete => Console.printLine("Websocket started")
+          case HandshakeTimeout => Console.printLine("Handshake timed out")
+      case ChannelEvent(channel, ChannelUnregistered) => Console.printLine("Channel unregistered")
+    }
+
+  val wsApp = Http.collectZIO[Request] {
+    case Method.GET -> !! / "chat" => wsLogic.toSocketApp.toResponse
+  }
+
   val httpProgram = for {
     _ <- Console.printLine(s"Starting server at http://localhost:$port")
-    _ <- Server.start(port, authApp)
+    _ <- Server.start(port, wsApp)
   } yield ()
   
   override def run: ZIO[Any, Any, Any] = httpProgram
