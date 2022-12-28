@@ -26,3 +26,8 @@
 1. execute `curl localhost:9000/greet` and you will notice this extra set cookie header `set-cookie x-csrf-token=68aed7e1-a13a-4069-80dd-a75b1a753b0b`
 2. execute `curl -X POST localhost:9000/greet -v` and you will see 403 Forbidden response.
 3. Now finally send the request with `x-csrf-token` header and cookie like `curl -X POST localhost:9000/greet -H "x-csrf-token: 68aed7e1-a13a-4069-80dd-a75b1a753b0b" --cookie "x-csrf-token=68aed7e1-a13a-4069-80dd-a75b1a753b0b" -v` and you will see the response returns `200 Ok`.
+
+### To test authentication
+1. run the `authApp` in `httpProgram`
+2. send this request `curl localhost:9000/secret -v` and you should see a 401 Unauthorized response.
+3. Now send a request with valid username and password like `curl localhost:9000/secret -u "rizwan:minhas" -v` and you will get a 200 OK response. 
