@@ -13,12 +13,12 @@ object ZIOHTTP extends ZIOAppDefault:
 
   val app: Http[Any, Nothing, Request, Response] = Http.collect[Request] {
     case Method.GET -> !! / "greet" => Response.text("hello rizwan")
-  }
+  } @@ Middleware.csrfGenerate()
 
   val zApp: UHttpApp = Http.collectZIO[Request] {
     case Method.POST -> !! / "greet" =>
       Random.nextIntBetween(3,5).map(n => Response.text(s"${"Hello" * n} rizwan!"))
-  }
+  } @@ Middleware.csrfValidate()
 
   // ++ (concatenation) means if doesn't match on left side then try right side. If left side matches and fails then the right side will NOT be tried.
   // <> (orElse) means if left fails then right will be tried.
@@ -38,6 +38,8 @@ object ZIOHTTP extends ZIOAppDefault:
   )
 
   val corsEnabledHttp = combined @@ Middleware.cors(corsConfig) @@ Verbose.log
+
+
 
   val httpProgram = for {
     _ <- Console.printLine(s"Starting server at http://localhost:$port")
