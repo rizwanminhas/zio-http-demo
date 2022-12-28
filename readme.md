@@ -30,4 +30,8 @@
 ### To test authentication
 1. run the `authApp` in `httpProgram`
 2. send this request `curl localhost:9000/secret -v` and you should see a 401 Unauthorized response.
-3. Now send a request with valid username and password like `curl localhost:9000/secret -u "rizwan:minhas" -v` and you will get a 200 OK response. 
+3. Now send a request with valid username and password like `curl localhost:9000/secret -u "rizwan:minhas" -v` and you will get a 200 OK response.
+
+### To test websockets
+1. Optional `brew install websocat`
+2. execute `websocat ws://localhost:9000/chat` and start typing and hit return. You will see the server response with mixed cases.
