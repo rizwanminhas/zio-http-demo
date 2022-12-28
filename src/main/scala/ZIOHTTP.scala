@@ -20,6 +20,11 @@ object ZIOHTTP extends ZIOAppDefault:
       Random.nextIntBetween(3,5).map(n => Response.text(s"${"Hello" * n} rizwan!"))
   } @@ Middleware.csrfValidate()
 
+  val authApp: UHttpApp = Http.collect[Request] {
+    case Method.GET -> !! / "secret" =>
+      Response.text("The password is minhas")
+  } @@ Middleware.basicAuth("rizwan", "minhas")
+
   // ++ (concatenation) means if doesn't match on left side then try right side. If left side matches and fails then the right side will NOT be tried.
   // <> (orElse) means if left fails then right will be tried.
   val combined = app ++ zApp
@@ -39,11 +44,9 @@ object ZIOHTTP extends ZIOAppDefault:
 
   val corsEnabledHttp = combined @@ Middleware.cors(corsConfig) @@ Verbose.log
 
-
-
   val httpProgram = for {
     _ <- Console.printLine(s"Starting server at http://localhost:$port")
-    _ <- Server.start(port, corsEnabledHttp)
+    _ <- Server.start(port, authApp)
   } yield ()
   
   override def run: ZIO[Any, Any, Any] = httpProgram
